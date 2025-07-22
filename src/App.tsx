@@ -3,20 +3,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import Index from "./pages/Index";
-import Servicios from "./pages/Servicios";
-import Implementacion from "./pages/servicios/Implementacion";
-import Automatizacion from "./pages/servicios/Automatizacion";
-import Consultoria from "./pages/servicios/Consultoria";
-import Transformacion from "./pages/servicios/Transformacion";
-import Testimonios from "./pages/Testimonios";
-import Contacto from "./pages/Contacto";
-import SobreNosotros from "./pages/SobreNosotros";
-import CasosDeExito from "./pages/CasosDeExito";
-import CasoDeExitoDetalle from "./pages/CasoDeExitoDetalle";
-import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/contexts/AuthContext";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import Dashboard from "@/pages/Dashboard";
+import Grupos from "@/pages/Grupos";
+import Resumos from "@/pages/Resumos";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -41,28 +38,35 @@ if (typeof document !== 'undefined') {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/servicios" element={<Servicios />} />
-          <Route path="/servicios/implementacion" element={<Implementacion />} />
-          <Route path="/servicios/automatizacion" element={<Automatizacion />} />
-          <Route path="/servicios/consultoria" element={<Consultoria />} />
-          <Route path="/servicios/transformacion" element={<Transformacion />} />
-          <Route path="/testimonios" element={<Testimonios />} />
-          <Route path="/sobre-nosotros" element={<SobreNosotros />} />
-          <Route path="/casos-de-exito" element={<CasosDeExito />} />
-          <Route path="/casos-de-exito/:id" element={<CasoDeExitoDetalle />} />
-          <Route path="/contacto" element={<Contacto />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Dashboard Routes */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="grupos" element={<Grupos />} />
+              <Route path="resumos" element={<Resumos />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            
+            {/* Redirect root to dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

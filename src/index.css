@@ -4,128 +4,127 @@
 @tailwind utilities;
 
 :root {
-  --exertion-50: #f0f9ff;
-  --exertion-100: #e0f2fe;
-  --exertion-200: #bae6fd;
-  --exertion-300: #7dd3fc;
-  --exertion-400: #38bdf8;
-  --exertion-500: #0ea5e9;
-  --exertion-600: #0284c7;
-  --exertion-700: #0369a1;
-  --exertion-800: #075985;
-  --exertion-900: #0c4a6e;
-  --exertion-950: #082f49;
+  /* Cyberpunk Brand Colors */
+  --background: 220 13% 9%;
+  --foreground: 220 9% 95%;
+  --card: 220 13% 11%;
+  --card-foreground: 220 9% 95%;
+  --popover: 220 13% 11%;
+  --popover-foreground: 220 9% 95%;
+  --primary: 284 100% 66%;
+  --primary-foreground: 220 9% 95%;
+  --secondary: 180 100% 50%;
+  --secondary-foreground: 220 9% 95%;
+  --muted: 220 13% 16%;
+  --muted-foreground: 220 9% 65%;
+  --accent: 340 100% 60%;
+  --accent-foreground: 220 9% 95%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 220 9% 95%;
+  --border: 220 13% 18%;
+  --input: 220 13% 16%;
+  --ring: 284 100% 66%;
+  --radius: 0.75rem;
   
-  /* Zinc colors */
-  --zinc-50: #fafafa;
-  --zinc-100: #f4f4f5;
-  --zinc-200: #e4e4e7;
-  --zinc-300: #d4d4d8;
-  --zinc-400: #a1a1aa;
-  --zinc-500: #71717a;
-  --zinc-600: #52525b;
-  --zinc-700: #3f3f46;
-  --zinc-800: #27272a;
-  --zinc-900: #18181b;
-  --zinc-950: #09090b;
+  /* Cyberpunk Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(284 100% 66%), hsl(340 100% 60%));
+  --gradient-secondary: linear-gradient(135deg, hsl(180 100% 50%), hsl(284 100% 66%));
+  --gradient-cyber: linear-gradient(135deg, hsl(180 100% 50%), hsl(284 100% 66%), hsl(340 100% 60%));
+  
+  /* Cyberpunk Shadows */
+  --shadow-neon: 0 0 20px hsl(284 100% 66% / 0.5);
+  --shadow-cyber: 0 4px 20px hsl(284 100% 66% / 0.3);
+  --shadow-glow: 0 0 40px hsl(180 100% 50% / 0.4);
+  
+  /* Legacy colors for compatibility */
+  --exertion-400: hsl(284 100% 66%);
+  --exertion-500: hsl(284 100% 60%);
+  --exertion-600: hsl(284 100% 55%);
 }
 
 @layer base {
+  * {
+    @apply border-border;
+  }
+  
   html {
     scroll-behavior: smooth;
   }
   
   body {
-    @apply bg-zinc-900 text-zinc-100;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  .section-header {
-    @apply bg-zinc-900/70 backdrop-blur-md;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
   }
   
-  .section-main {
-    @apply bg-zinc-900;
+  .cyber-text {
+    @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent;
   }
   
-  .section-data {
-    @apply bg-zinc-900;
+  .cyber-border {
+    @apply border border-primary/20 shadow-[0_0_20px_hsl(284_100%_66%/0.1)];
   }
   
-  .section-padding {
-    @apply py-10 px-4 sm:px-6 lg:px-8;
+  .cyber-card {
+    @apply bg-card border cyber-border rounded-lg backdrop-blur-sm;
   }
   
-  .card-container {
-    @apply bg-zinc-800 border border-zinc-700 rounded-xl shadow-lg hover:shadow-xl transition-shadow;
+  .cyber-button {
+    @apply bg-gradient-to-r from-primary to-secondary hover:from-primary/80 hover:to-secondary/80 text-white border-0 shadow-[0_0_20px_hsl(284_100%_66%/0.3)];
+  }
+  
+  .neon-glow {
+    @apply shadow-[0_0_20px_hsl(284_100%_66%/0.5)];
   }
 }
 
 @layer utilities {
-  .text-gradient {
-    @apply bg-gradient-to-r from-exertion-400 to-blue-600 bg-clip-text text-transparent;
+  .cyber-grid {
+    background-image: 
+      linear-gradient(hsl(284 100% 66% / 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(284 100% 66% / 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
   
-  .glow-blue-400 {
-    box-shadow: 0 0 15px theme('colors.blue.400');
+  .cyber-scan {
+    position: relative;
+    overflow: hidden;
   }
   
-  .perspective-1000 {
-    perspective: 1000px;
+  .cyber-scan::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(180 100% 50% / 0.2), transparent);
+    animation: scan 2s linear infinite;
   }
   
-  .preserve-3d {
-    transform-style: preserve-3d;
+  @keyframes scan {
+    0% { left: -100%; }
+    100% { left: 100%; }
   }
   
-  .backface-hidden {
-    backface-visibility: hidden;
+  .cyber-pulse {
+    animation: cyber-pulse 2s ease-in-out infinite;
   }
   
-  .rotate-y-5 {
-    transform: rotateY(5deg);
+  @keyframes cyber-pulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px hsl(284 100% 66% / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 40px hsl(284 100% 66% / 0.6), 0 0 60px hsl(180 100% 50% / 0.4);
+    }
   }
   
-  .rotate-x-10 {
-    transform: rotateX(10deg);
-  }
-  
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  
-  .animate-bounce-soft {
-    animation: bounce-soft 2s ease-in-out infinite;
-  }
-  
-  .animate-slide-in-top {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: slide-in-top 0.6s forwards;
-  }
-  
-  .animate-spin-slow {
-    animation: spin 20s linear infinite;
-  }
-  
-  .animate-spin-slow-reverse {
-    animation: spin 25s linear infinite reverse;
-  }
-  
-  .animate-spin-slow-2 {
-    animation: spin 30s linear infinite;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  .animate-pulse-slow-2 {
-    animation: pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  /* Custom dark mode utilities */
-  .dark-card {
-    @apply bg-zinc-800 border border-zinc-700;
+  .cyber-text-glow {
+    text-shadow: 0 0 10px hsl(284 100% 66% / 0.5);
   }
 }
 
