@@ -9,7 +9,8 @@ import {
   LogOut,
   Bot,
   Menu,
-  X
+  X,
+  Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ const DashboardLayout = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Grupos', href: '/dashboard/grupos', icon: Users },
     { name: 'Resumos', href: '/dashboard/resumos', icon: FileText },
+    { name: 'Conexão', href: '/dashboard/conexao', icon: Smartphone },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
   ];
 
@@ -82,7 +84,7 @@ const DashboardLayout = () => {
                   className={`
                     flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
                     ${isActive 
-                      ? 'bg-primary/20 text-primary cyber-pulse' 
+                      ? 'bg-primary/20 text-primary' 
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     }
                   `}

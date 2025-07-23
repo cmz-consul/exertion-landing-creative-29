@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -14,6 +15,7 @@ import Dashboard from "@/pages/Dashboard";
 import Grupos from "@/pages/Grupos";
 import Resumos from "@/pages/Resumos";
 import Settings from "@/pages/Settings";
+import Conexao from "@/pages/Conexao";
 
 const queryClient = new QueryClient();
 
@@ -51,10 +53,15 @@ const App = () => (
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             
             {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<Dashboard />} />
               <Route path="grupos" element={<Grupos />} />
               <Route path="resumos" element={<Resumos />} />
+              <Route path="conexao" element={<Conexao />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             

@@ -1,21 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { apiService } from '@/services/api';
+import { Usuario } from '@/types/database';
 
-interface User {
-  id: number;
-  nome: string;
-  email: string;
-  instancia: string;
-  plano_ativo: boolean;
-  horaResumo: string;
-  resumoDiaAnterior: boolean;
-  transcricao_ativa: boolean;
-  'transcricao-pvd': boolean;
-  transcreverEu: boolean;
-  ambiente: 'prod' | 'dev';
-  ludico: boolean;
-  agendamento: boolean;
-  criado_em: string;
-}
+type User = Usuario;
 
 interface AuthContextType {
   user: User | null;
@@ -49,57 +36,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored authentication
-    const storedUser = localStorage.getItem('intellizap_user');
-    const storedToken = localStorage.getItem('intellizap_token');
-    
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const checkStoredAuth = async () => {
+      // LIMPAR CACHE SEMPRE - DADOS FRESCOS DO BANCO
+      console.log('🗑️ LIMPANDO CACHE LOCALSTORAGE');
+      
+      const storedToken = localStorage.getItem('intellizap_token');
+      let storedUserId = null;
+      
+      // Tentar pegar apenas o ID do usuário, ignorar resto dos dados
+      try {
+        const storedUser = localStorage.getItem('intellizap_user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          storedUserId = userData.id;
+        }
+      } catch (error) {
+        console.log('Erro ao ler userData local, ignorando...');
+      }
+      
+      if (storedToken && storedUserId) {
+        try {
+          console.log('🔄 BUSCANDO DADOS FRESCOS DO BANCO - ID:', storedUserId);
+          
+          // SEMPRE buscar dados frescos do servidor
+          const response = await apiService.getUser(storedUserId);
+          
+          if (response.success && response.data) {
+            console.log('✅ DADOS DO BANCO CARREGADOS:', {
+              transcricao_ativa: response.data.transcricao_ativa,
+              'transcricao-pvd': response.data['transcricao-pvd'],
+              transcreverEu: response.data.transcreverEu,
+              ludico: response.data.ludico,
+              agendamento: response.data.agendamento
+            });
+            
+            // Usar dados frescos do banco
+            setUser(response.data);
+            localStorage.setItem('intellizap_user', JSON.stringify(response.data));
+          } else {
+            // Backend retornou erro, limpar tudo
+            console.error('❌ Backend retornou erro, limpando sessão');
+            localStorage.removeItem('intellizap_user');
+            localStorage.removeItem('intellizap_token');
+            setUser(null);
+          }
+        } catch (error) {
+          // Backend não está funcionando - limpar tudo
+          console.error('❌ Backend não funcional, limpando sessão:', error);
+          localStorage.removeItem('intellizap_user');
+          localStorage.removeItem('intellizap_token');
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkStoredAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Simulate API call - replace with actual API endpoint
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
+      const response = await apiService.login(email, password);
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        localStorage.setItem('intellizap_user', JSON.stringify(response.data.user));
+        localStorage.setItem('intellizap_token', response.data.token);
+      } else {
+        throw new Error(response.message || 'Login failed');
       }
-
-      const data = await response.json();
-      setUser(data.user);
-      localStorage.setItem('intellizap_user', JSON.stringify(data.user));
-      localStorage.setItem('intellizap_token', data.token);
     } catch (error) {
-      // For demo purposes, create a mock user
-      const mockUser: User = {
-        id: 1,
-        nome: 'Demo User',
-        email,
-        instancia: 'demo-instance',
-        plano_ativo: true,
-        horaResumo: '09:00',
-        resumoDiaAnterior: false,
-        transcricao_ativa: true,
-        'transcricao-pvd': true,
-        transcreverEu: false,
-        ambiente: 'prod',
-        ludico: false,
-        agendamento: true,
-        criado_em: new Date().toISOString(),
-      };
-      setUser(mockUser);
-      localStorage.setItem('intellizap_user', JSON.stringify(mockUser));
-      localStorage.setItem('intellizap_token', 'demo-token');
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -108,44 +117,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: RegisterData) => {
     setLoading(true);
     try {
-      // Simulate API call - replace with actual API endpoint
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Registration failed');
+      const response = await apiService.register(userData);
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        localStorage.setItem('intellizap_user', JSON.stringify(response.data.user));
+        localStorage.setItem('intellizap_token', response.data.token);
+      } else {
+        throw new Error(response.message || 'Registration failed');
       }
-
-      const data = await response.json();
-      setUser(data.user);
-      localStorage.setItem('intellizap_user', JSON.stringify(data.user));
-      localStorage.setItem('intellizap_token', data.token);
     } catch (error) {
-      // For demo purposes, create a mock user
-      const mockUser: User = {
-        id: 1,
-        nome: userData.nome,
-        email: userData.email,
-        instancia: userData.instancia,
-        plano_ativo: true,
-        horaResumo: '09:00',
-        resumoDiaAnterior: false,
-        transcricao_ativa: true,
-        'transcricao-pvd': true,
-        transcreverEu: false,
-        ambiente: 'prod',
-        ludico: false,
-        agendamento: true,
-        criado_em: new Date().toISOString(),
-      };
-      setUser(mockUser);
-      localStorage.setItem('intellizap_user', JSON.stringify(mockUser));
-      localStorage.setItem('intellizap_token', 'demo-token');
+      console.error('Registration error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -161,28 +144,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
-      // Simulate API call - replace with actual API endpoint
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('intellizap_token')}`,
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Profile update failed');
+      const response = await apiService.updateUser(user.id, userData);
+      
+      if (response.success && response.data) {
+        setUser(response.data);
+        localStorage.setItem('intellizap_user', JSON.stringify(response.data));
+      } else {
+        throw new Error(response.message || 'Profile update failed');
       }
-
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('intellizap_user', JSON.stringify(updatedUser));
     } catch (error) {
-      // For demo purposes, update locally
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('intellizap_user', JSON.stringify(updatedUser));
+      console.error('Update user error:', error);
+      throw error;
     }
   };
 
