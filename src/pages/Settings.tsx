@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiService } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,12 +42,12 @@ const Settings = () => {
     email: user?.email || '',
     instancia: user?.instancia || '',
     horaResumo: user?.horaResumo || '09:00',
-    resumoDiaAnterior: user?.resumoDiaAnterior || false,
-    transcricao_ativa: user?.transcricao_ativa || true,
-    'transcricao-pvd': user?.['transcricao-pvd'] || true,
-    transcreverEu: user?.transcreverEu || false,
-    ludico: user?.ludico || false,
-    agendamento: user?.agendamento || true,
+    resumoDiaAnterior: Boolean(user?.resumoDiaAnterior),
+    transcricao_ativa: Boolean(user?.transcricao_ativa),
+    'transcricao-pvd': Boolean(user?.['transcricao-pvd']),
+    transcreverEu: Boolean(user?.transcreverEu),
+    ludico: Boolean(user?.ludico),
+    agendamento: Boolean(user?.agendamento),
     ambiente: user?.ambiente || 'prod',
     'key-openai': user?.['key-openai'] || ''
   });
@@ -56,6 +57,32 @@ const Settings = () => {
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Atualizar formData sempre que user mudar (dados frescos do banco)
+  useEffect(() => {
+    if (user) {
+      console.log('🔄 Atualizando formData com dados frescos do usuário:', {
+        'transcricao-pvd': user['transcricao-pvd'],
+        ludico: user.ludico,
+        agendamento: user.agendamento
+      });
+      
+      setFormData({
+        nome: user.nome || '',
+        email: user.email || '',
+        instancia: user.instancia || '',
+        horaResumo: user.horaResumo || '09:00',
+        resumoDiaAnterior: Boolean(user.resumoDiaAnterior),
+        transcricao_ativa: Boolean(user.transcricao_ativa),
+        'transcricao-pvd': Boolean(user['transcricao-pvd']),
+        transcreverEu: Boolean(user.transcreverEu),
+        ludico: Boolean(user.ludico),
+        agendamento: Boolean(user.agendamento),
+        ambiente: user.ambiente || 'prod',
+        'key-openai': user['key-openai'] || ''
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -120,8 +147,7 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      // Simulate API call for password change
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await apiService.changePassword(user!.id, passwordData.currentPassword, passwordData.newPassword);
       
       setPasswordData({
         currentPassword: '',
@@ -133,11 +159,11 @@ const Settings = () => {
         title: "Senha alterada",
         description: "Sua senha foi alterada com sucesso."
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível alterar a senha."
+        description: error.message || "Não foi possível alterar a senha."
       });
     } finally {
       setLoading(false);
@@ -169,6 +195,7 @@ const Settings = () => {
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome</Label>
                   <Input
+                    disabled
                     id="nome"
                     value={formData.nome}
                     onChange={(e) => handleInputChange('nome', e.target.value)}
@@ -184,19 +211,11 @@ const Settings = () => {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="cyber-border"
+                    disabled
                   />
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="instancia">Nome da Instância WhatsApp</Label>
-                <Input
-                  id="instancia"
-                  value={formData.instancia}
-                  onChange={(e) => handleInputChange('instancia', e.target.value)}
-                  className="cyber-border"
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -209,48 +228,62 @@ const Settings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="horaResumo">Horário do Resumo</Label>
-                  <Input
-                    id="horaResumo"
-                    type="time"
-                    value={formData.horaResumo}
-                    onChange={(e) => handleInputChange('horaResumo', e.target.value)}
-                    className="cyber-border"
-                  />
+              {/* Horário do Resumo - Interface Melhorada */}
+              <div className="space-y-4 p-6 border border-secondary/20 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-secondary/10">
+                    <Clock className="h-6 w-6 text-secondary" />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="horaResumo" className="text-lg font-semibold">
+                      Horário do Resumo Automático
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Defina quando os resumos dos grupos serão enviados automaticamente todos os dias
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="ambiente">Ambiente</Label>
-                  <Select value={formData.ambiente} onValueChange={(value) => handleInputChange('ambiente', value)}>
-                    <SelectTrigger className="cyber-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="cyber-card">
-                      <SelectItem value="prod">Produção</SelectItem>
-                      <SelectItem value="dev">Desenvolvimento</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center gap-6 ml-16">
+                  <div className="space-y-2">
+                    <Input
+                      id="horaResumo"
+                      type="time"
+                      value={formData.horaResumo}
+                      onChange={(e) => handleInputChange('horaResumo', e.target.value)}
+                      className="cyber-border w-40 text-xl font-mono text-center"
+                    />
+                  </div>
+                  
+                  <div className="flex-1 space-y-2">
+                    <div className="text-sm font-medium">Próximo envio</div>
+                    <div className="text-lg font-semibold text-primary">
+                      {(() => {
+                        const now = new Date();
+                        const [hours, minutes] = formData.horaResumo.split(':');
+                        const resumeTime = new Date();
+                        resumeTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        
+                        // Se já passou do horário hoje, mostrar amanhã
+                        if (now > resumeTime) {
+                          resumeTime.setDate(resumeTime.getDate() + 1);
+                          return `Amanhã às ${formData.horaResumo}`;
+                        } else {
+                          return `Hoje às ${formData.horaResumo}`;
+                        }
+                      })()}
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      Resumos enviados diariamente no horário configurado
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <Separator />
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Agendamento Automático</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Ativar envio automático de resumos
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formData.agendamento}
-                    onCheckedChange={(checked) => handleInputChange('agendamento', checked)}
-                  />
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Resumo do Dia Anterior</Label>
@@ -326,47 +359,6 @@ const Settings = () => {
                   checked={formData.transcreverEu}
                   onCheckedChange={(checked) => handleInputChange('transcreverEu', checked)}
                 />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* API Configuration */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-primary" />
-                Configuração de API
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="openai-key">Chave API OpenAI</Label>
-                <div className="relative">
-                  <Input
-                    id="openai-key"
-                    type={showApiKey ? "text" : "password"}
-                    value={formData['key-openai']}
-                    onChange={(e) => handleInputChange('key-openai', e.target.value)}
-                    placeholder="sk-..."
-                    className="cyber-border pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                  >
-                    {showApiKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Sua chave API será armazenada de forma segura e usada apenas para gerar resumos
-                </p>
               </div>
             </CardContent>
           </Card>

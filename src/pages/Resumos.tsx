@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
+import { useResumos } from '@/hooks/useResumos';
+import { useGrupos } from '@/hooks/useGrupos';
 import { 
   FileText, 
   Search, 
@@ -13,7 +17,8 @@ import {
   Eye,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import {
   Select,
@@ -30,236 +35,38 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-interface Resumo {
-  id: number;
-  grupo_nome: string;
-  grupo_id: number;
-  conteudo: string;
-  data_criacao: string;
-  status: 'enviado' | 'erro' | 'pendente';
-  total_mensagens: number;
-}
-
 const Resumos = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // Mock data - replace with actual API calls
-  const [resumos] = useState<Resumo[]>([
-    {
-      id: 1,
-      grupo_nome: 'Equipe Marketing',
-      grupo_id: 1,
-      conteudo: `📊 **Resumo do Grupo - Equipe Marketing**
-📅 Data: 15/01/2024
+  // Fetch real data from API
+  const { 
+    data: resumosData, 
+    isLoading: resumosLoading,
+    error: resumosError 
+  } = useResumos(currentPage, itemsPerPage, undefined, undefined, 
+    selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
+    selectedStatus !== 'all' ? selectedStatus : undefined
+  );
+  
+  const { data: gruposData } = useGrupos(1, 100);
 
-🔥 **Principais Discussões:**
-• Campanha Q1 2024 - Definidas estratégias para redes sociais
-• Budget aprovado para Google Ads
-• Novo designer contratado - João Silva
-• Review de performance das campanhas de dezembro
+  const resumos = resumosData?.data || [];
+  const totalPages = resumosData?.pagination?.totalPages || 1;
 
-💡 **Decisões Tomadas:**
-• Aumentar investimento em TikTok em 30%
-• Criar landing pages específicas para cada produto
-• Implementar A/B testing em todas as campanhas
+  // Get groups for filter dropdown
+  const groups = gruposData?.data || [];
 
-📈 **Métricas Discutidas:**
-• CTR médio: 3.2% (↗ 0.5%)
-• Conversões: 847 (↗ 12%)
-• CAC: R$ 45,30 (↘ R$ 3,20)
-
-🎯 **Próximos Passos:**
-• Reunião com o time de produto na terça
-• Apresentação dos resultados para diretoria
-• Início da campanha de carnaval`,
-      data_criacao: '2024-01-15 09:00:00',
-      status: 'enviado',
-      total_mensagens: 47
-    },
-    {
-      id: 2,
-      grupo_nome: 'Desenvolvimento',
-      grupo_id: 2,
-      conteudo: `💻 **Resumo do Grupo - Desenvolvimento**
-📅 Data: 15/01/2024
-
-🚀 **Features Desenvolvidas:**
-• API de notificações push implementada
-• Dashboard de analytics finalizado
-• Correção de bugs críticos no módulo de pagamento
-• Testes automatizados para módulo de usuários
-
-🔧 **Issues Resolvidas:**
-• Bug #1247: Erro no login social
-• Bug #1248: Lentidão na listagem de produtos
-• Bug #1249: Falha no envio de emails
-
-📋 **Code Review:**
-• PR #456: Otimização de queries (aprovado)
-• PR #457: Refatoração do módulo auth (em review)
-• PR #458: Nova feature de relatórios (aprovado)
-
-🎯 **Planejamento:**
-• Deploy da versão 2.1.0 amanhã
-• Início do desenvolvimento da v2.2.0
-• Reunião de planning na quinta-feira`,
-      data_criacao: '2024-01-15 09:00:00',
-      status: 'enviado',
-      total_mensagens: 73
-    },
-    {
-      id: 3,
-      grupo_nome: 'Vendas',
-      grupo_id: 3,
-      conteudo: `💰 **Resumo do Grupo - Vendas**
-📅 Data: 14/01/2024
-
-📊 **Resultados do Dia:**
-• 12 demos agendadas
-• 8 propostas enviadas
-• 3 contratos fechados
-• R$ 45.000 em vendas
-
-🎯 **Pipeline:**
-• 67 leads qualificados
-• 23 oportunidades em negociação
-• R$ 230.000 em pipeline total
-• Taxa de conversão: 18%
-
-🏆 **Destaques:**
-• Maria bateu meta mensal (120%)
-• Pedro fechou maior contrato do trimestre
-• Novo método de follow-up aprovado
-• Workshop de objeções na sexta
-
-⚠️ **Atenção:**
-• Cliente ABC pendente de resposta
-• Proposta XYZ vence amanhã
-• Reunião urgente com prospect DEF`,
-      data_criacao: '2024-01-14 18:00:00',
-      status: 'erro',
-      total_mensagens: 28
-    },
-    {
-      id: 4,
-      grupo_nome: 'Suporte',
-      grupo_id: 4,
-      conteudo: `🎧 **Resumo do Grupo - Suporte**
-📅 Data: 15/01/2024
-
-📞 **Atendimentos:**
-• 43 tickets resolvidos
-• 12 tickets em andamento
-• 3 tickets escalados
-• Tempo médio de resposta: 2h15min
-
-🔥 **Principais Issues:**
-• Problema na integração do WhatsApp (resolvido)
-• Lentidão no carregamento (investigando)
-• Erro de sincronização (escalado para dev)
-
-👥 **Feedback dos Clientes:**
-• NPS do dia: 8.7/10
-• 5 elogios recebidos
-• 2 sugestões de melhoria
-• 1 reclamação (já resolvida)
-
-📈 **Melhorias:**
-• Novo chatbot implementado
-• Base de conhecimento atualizada
-• Treinamento da equipe concluído`,
-      data_criacao: '2024-01-15 18:30:00',
-      status: 'enviado',
-      total_mensagens: 35
-    },
-    {
-      id: 5,
-      grupo_nome: 'Equipe Marketing',
-      grupo_id: 1,
-      conteudo: `📊 **Resumo do Grupo - Equipe Marketing**
-📅 Data: 14/01/2024
-
-🔍 **Análises Realizadas:**
-• Relatório de performance das campanhas
-• Análise de concorrência
-• Pesquisa de palavras-chave
-• Estudo de personas
-
-📱 **Redes Sociais:**
-• Instagram: 15k impressões (+12%)
-• LinkedIn: 8.5k visualizações (+8%)
-• TikTok: 22k visualizações (+25%)
-• Facebook: 12k alcance (+5%)
-
-💡 **Insights:**
-• Vídeos performam 40% melhor
-• Posts manhã têm maior engajamento
-• Stories geram mais traffic para site
-• Carrossel aumenta tempo de permanência
-
-🎨 **Criativos:**
-• 8 novos designs aprovados
-• Campanha de branding finalizada
-• Materiais para feira prontos`,
-      data_criacao: '2024-01-14 09:00:00',
-      status: 'enviado',
-      total_mensagens: 52
-    },
-    {
-      id: 6,
-      grupo_nome: 'Desenvolvimento',
-      grupo_id: 2,
-      conteudo: `💻 **Resumo do Grupo - Desenvolvimento**
-📅 Data: 13/01/2024
-
-⚡ **Urgente - Problemas Críticos:**
-• Servidor principal com instabilidade
-• API de pagamentos retornando erro 500
-• Database com alta latência
-• Usuários reportando lentidão
-
-🔧 **Ações Tomadas:**
-• Restart dos serviços principais
-• Escalamento automático ativado
-• Monitoramento intensificado
-• Time de plantão acionado
-
-📊 **Status Atual:**
-• 99.2% de disponibilidade (meta: 99.9%)
-• Tempo de resposta: 450ms (meta: 200ms)
-• Erro rate: 0.8% (meta: 0.1%)
-
-🚨 **Próximas Ações:**
-• Migração para nova infraestrutura
-• Otimização de queries críticas
-• Implementação de circuit breakers`,
-      data_criacao: '2024-01-13 15:45:00',
-      status: 'pendente',
-      total_mensagens: 89
-    }
-  ]);
-
-  // Get unique groups for filter
-  const groups = [...new Set(resumos.map(r => r.grupo_nome))];
-
-  // Filter resumos
+  // Client-side filtering for search (server-side filtering handled by API)
   const filteredResumos = resumos.filter(resumo => {
-    const matchesSearch = resumo.grupo_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resumo.conteudo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGroup = selectedGroup === 'all' || resumo.grupo_nome === selectedGroup;
-    const matchesStatus = selectedStatus === 'all' || resumo.status === selectedStatus;
-    
-    return matchesSearch && matchesGroup && matchesStatus;
+    if (!searchTerm) return true;
+    return resumo.grupo_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           resumo.conteudo?.toLowerCase().includes(searchTerm.toLowerCase());
   });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredResumos.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedResumos = filteredResumos.slice(startIndex, startIndex + itemsPerPage);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -317,7 +124,9 @@ const Resumos = () => {
           <SelectContent className="cyber-card">
             <SelectItem value="all">Todos os grupos</SelectItem>
             {groups.map(group => (
-              <SelectItem key={group} value={group}>{group}</SelectItem>
+              <SelectItem key={group.id} value={group.id.toString()}>
+                {group.nome_grupo || 'Grupo sem nome'}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -341,9 +150,62 @@ const Resumos = () => {
       </div>
 
       {/* Resumos Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {paginatedResumos.map((resumo) => (
-          <Card key={resumo.id} className="cyber-card cyber-scan">
+      {resumosLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <Card key={index} className="cyber-card">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-40" />
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-32 w-full" />
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-3 w-32" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : resumosError ? (
+        <Card className="cyber-card">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar resumos</h3>
+            <p className="text-muted-foreground text-center">
+              Não foi possível carregar os resumos. Tente recarregar a página.
+            </p>
+          </CardContent>
+        </Card>
+      ) : !filteredResumos.length ? (
+        <Card className="cyber-card">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum resumo encontrado</h3>
+            <p className="text-muted-foreground text-center">
+              {searchTerm || selectedGroup !== 'all' || selectedStatus !== 'all'
+                ? 'Tente ajustar os filtros de busca.'
+                : 'Os resumos enviados aparecerão aqui.'
+              }
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filteredResumos.map((resumo) => (
+          <Card key={resumo.id} className="cyber-card">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
@@ -354,7 +216,7 @@ const Resumos = () => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {getTimeSince(resumo.data_criacao)}
+                      {getTimeSince(resumo.data_criacao.toString())}
                     </span>
                     <span className="flex items-center gap-1">
                       <FileText className="h-4 w-4" />
@@ -376,7 +238,7 @@ const Resumos = () => {
               
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">
-                  {formatDate(resumo.data_criacao)}
+                  {formatDate(resumo.data_criacao.toString())}
                 </span>
                 
                 <div className="flex gap-2">
@@ -398,7 +260,7 @@ const Resumos = () => {
                         <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {formatDate(resumo.data_criacao)}
+                            {formatDate(resumo.data_criacao.toString())}
                           </span>
                           <span className="flex items-center gap-1">
                             <FileText className="h-4 w-4" />
@@ -423,10 +285,11 @@ const Resumos = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!resumosLoading && !resumosError && totalPages > 1 && (
         <div className="flex justify-center items-center gap-2">
           <Button
             variant="outline"
@@ -450,22 +313,6 @@ const Resumos = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-      )}
-
-      {/* Empty State */}
-      {filteredResumos.length === 0 && (
-        <Card className="cyber-card">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum resumo encontrado</h3>
-            <p className="text-muted-foreground text-center">
-              {searchTerm || selectedGroup !== 'all' || selectedStatus !== 'all'
-                ? 'Tente ajustar os filtros de busca.'
-                : 'Os resumos enviados aparecerão aqui.'
-              }
-            </p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );

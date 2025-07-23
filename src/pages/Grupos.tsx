@@ -21,72 +21,46 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Group {
-  id: number;
-  nome_grupo: string;
-  grupo_id_externo: string;
-  ativo: boolean;
-  ultima_mensagem: string;
-  total_mensagens: number;
-  criado_em: string;
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { useGrupos } from '@/hooks/useGrupos';
+import { Grupo } from '@/types/database';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Grupos = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
-
-  // Mock data - replace with actual API calls
-  const [grupos, setGrupos] = useState<Group[]>([
-    {
-      id: 1,
-      nome_grupo: 'Equipe Marketing',
-      grupo_id_externo: '120363028264952334@g.us',
-      ativo: true,
-      ultima_mensagem: '2024-01-15 14:30:00',
-      total_mensagens: 847,
-      criado_em: '2024-01-01 10:00:00'
-    },
-    {
-      id: 2,
-      nome_grupo: 'Desenvolvimento',
-      grupo_id_externo: '120363028264952335@g.us',
-      ativo: true,
-      ultima_mensagem: '2024-01-15 15:45:00',
-      total_mensagens: 1203,
-      criado_em: '2024-01-01 10:00:00'
-    },
-    {
-      id: 3,
-      nome_grupo: 'Vendas',
-      grupo_id_externo: '120363028264952336@g.us',
-      ativo: false,
-      ultima_mensagem: '2024-01-14 09:15:00',
-      total_mensagens: 634,
-      criado_em: '2024-01-01 10:00:00'
-    },
-    {
-      id: 4,
-      nome_grupo: 'Suporte',
-      grupo_id_externo: '120363028264952337@g.us',
-      ativo: true,
-      ultima_mensagem: '2024-01-15 16:20:00',
-      total_mensagens: 392,
-      criado_em: '2024-01-01 10:00:00'
-    }
-  ]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [grupoNome, setGrupoNome] = useState('');
+  const [grupoIdExterno, setGrupoIdExterno] = useState('');
+  
+  const {
+    grupos,
+    isLoading,
+    error,
+    refetch,
+    updateGrupo,
+    deleteGrupo,
+    createGrupo,
+    isUpdating,
+    isDeleting,
+    isCreating
+  } = useGrupos();
 
   const filteredGroups = grupos.filter(grupo =>
-    grupo.nome_grupo.toLowerCase().includes(searchTerm.toLowerCase())
+    grupo.nome_grupo?.toLowerCase().includes(searchTerm.toLowerCase()) || false
   );
 
   const handleToggleActive = async (id: number, currentStatus: boolean) => {
     try {
-      // Simulate API call
-      setGrupos(grupos.map(grupo =>
-        grupo.id === id ? { ...grupo, ativo: !currentStatus } : grupo
-      ));
+      updateGrupo({ id, data: { ativo: !currentStatus } });
       
       toast({
         title: "Status atualizado",
@@ -103,8 +77,7 @@ const Grupos = () => {
 
   const handleRemoveGroup = async (id: number) => {
     try {
-      // Simulate API call
-      setGrupos(grupos.filter(grupo => grupo.id !== id));
+      deleteGrupo(id);
       
       toast({
         title: "Grupo removido",
@@ -122,37 +95,108 @@ const Grupos = () => {
   const handleSyncGroups = async () => {
     setSyncing(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await refetch();
       
       toast({
-        title: "Sincronização concluída",
-        description: "Os grupos foram sincronizados com o WhatsApp."
+        title: "Lista atualizada",
+        description: "A lista de grupos foi atualizada com sucesso."
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Erro na sincronização",
-        description: "Não foi possível sincronizar os grupos."
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar a lista de grupos."
       });
     } finally {
       setSyncing(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+  const handleAddGrupo = async () => {
+    if (!grupoNome || !user) return;
+
+    try {
+      createGrupo({
+        nome_grupo: grupoNome,
+        grupo_id_externo: grupoIdExterno,
+        usuario_id: user.id,
+        ativo: true
+      });
+
+      toast({
+        title: "Grupo adicionado",
+        description: "O grupo foi adicionado com sucesso."
+      });
+
+      setModalOpen(false);
+      setGrupoNome('');
+      setGrupoIdExterno('');
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível adicionar o grupo."
+      });
+    }
   };
 
-  const getTimeSince = (dateString: string) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleString('pt-BR');
+  };
+
+  const getTimeSince = (date: Date | string) => {
     const now = new Date();
-    const date = new Date(dateString);
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Agora mesmo';
     if (diffInHours < 24) return `${diffInHours}h atrás`;
     return `${Math.floor(diffInHours / 24)}d atrás`;
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold cyber-text">Grupos WhatsApp</h1>
+            <p className="text-muted-foreground">Carregando grupos...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="cyber-card animate-pulse">
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold cyber-text">Grupos WhatsApp</h1>
+            <p className="text-muted-foreground text-red-400">Erro ao carregar grupos</p>
+          </div>
+          <Button onClick={() => refetch()} className="cyber-button">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -165,23 +209,81 @@ const Grupos = () => {
           </p>
         </div>
         
-        <Button 
-          onClick={handleSyncGroups}
-          disabled={syncing}
-          className="cyber-button"
-        >
-          {syncing ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Sincronizando...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Sincronizar
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleSyncGroups}
+            disabled={syncing}
+            className="cyber-button"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Atualizar Lista
+              </>
+            )}
+          </Button>
+          
+          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline"
+                className="cyber-button-outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Grupo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="cyber-card">
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Grupo</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Nome do Grupo *
+                  </label>
+                  <Input
+                    value={grupoNome}
+                    onChange={(e) => setGrupoNome(e.target.value)}
+                    placeholder="Digite o nome do grupo"
+                    className="cyber-border"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    ID do Grupo (WhatsApp)
+                  </label>
+                  <Input
+                    value={grupoIdExterno}
+                    onChange={(e) => setGrupoIdExterno(e.target.value)}
+                    placeholder="120363028264952334@g.us"
+                    className="cyber-border"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setModalOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleAddGrupo}
+                    disabled={!grupoNome || isCreating}
+                    className="cyber-button"
+                  >
+                    {isCreating ? 'Adicionando...' : 'Adicionar'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search and Stats */}
@@ -211,11 +313,11 @@ const Grupos = () => {
       {/* Groups Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((grupo) => (
-          <Card key={grupo.id} className="cyber-card cyber-scan">
+          <Card key={grupo.id} className="cyber-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="flex items-center space-x-2">
                 <Users className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg truncate">{grupo.nome_grupo}</CardTitle>
+                <CardTitle className="text-lg truncate">{grupo.nome_grupo || 'Sem nome'}</CardTitle>
               </div>
               
               <DropdownMenu>
@@ -250,18 +352,10 @@ const Grupos = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 text-muted-foreground">
-                    <MessageCircle className="h-4 w-4" />
-                    Mensagens
-                  </span>
-                  <span className="font-medium">{grupo.total_mensagens}</span>
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    Última atividade
+                    Criado em
                   </span>
-                  <span className="font-medium">{getTimeSince(grupo.ultima_mensagem)}</span>
+                  <span className="font-medium">{formatDate(grupo.criado_em)}</span>
                 </div>
               </div>
 
@@ -275,7 +369,7 @@ const Grupos = () => {
                 </Badge>
                 
                 <span className="text-xs text-muted-foreground">
-                  ID: {grupo.grupo_id_externo.slice(0, 8)}...
+                  ID: {grupo.grupo_id_externo?.slice(0, 8) || 'N/A'}...
                 </span>
               </div>
             </CardContent>
@@ -292,14 +386,61 @@ const Grupos = () => {
             <p className="text-muted-foreground text-center mb-4">
               {searchTerm 
                 ? 'Nenhum grupo corresponde à sua busca.'
-                : 'Sincronize com o WhatsApp para ver seus grupos aqui.'
+                : 'Adicione grupos da Evolution API para começar.'
               }
             </p>
             {!searchTerm && (
-              <Button onClick={handleSyncGroups} className="cyber-button">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Sincronizar Grupos
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="cyber-button">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar Grupos
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="cyber-card">
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Novo Grupo</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Nome do Grupo *
+                      </label>
+                      <Input
+                        value={grupoNome}
+                        onChange={(e) => setGrupoNome(e.target.value)}
+                        placeholder="Digite o nome do grupo"
+                        className="cyber-border"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        ID do Grupo (WhatsApp)
+                      </label>
+                      <Input
+                        value={grupoIdExterno}
+                        onChange={(e) => setGrupoIdExterno(e.target.value)}
+                        placeholder="120363028264952334@g.us"
+                        className="cyber-border"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <DialogTrigger asChild>
+                        <Button variant="outline">
+                          Cancelar
+                        </Button>
+                      </DialogTrigger>
+                      <Button
+                        onClick={handleAddGrupo}
+                        disabled={!grupoNome || isCreating}
+                        className="cyber-button"
+                      >
+                        {isCreating ? 'Adicionando...' : 'Adicionar'}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             )}
           </CardContent>
         </Card>
