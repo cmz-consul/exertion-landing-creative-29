@@ -41,6 +41,7 @@ const Grupos = () => {
   const [grupoNome, setGrupoNome] = useState('');
   const [grupoIdExterno, setGrupoIdExterno] = useState('');
   
+  
   const {
     grupos,
     isLoading,
