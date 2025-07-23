@@ -441,45 +441,10 @@ const Settings = () => {
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Ambiente</span>
-                <Badge variant="outline">
-                  {formData.ambiente === 'prod' ? 'Produção' : 'Desenvolvimento'}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Criado em</span>
                 <span className="text-sm text-muted-foreground">
                   {user?.criado_em ? new Date(user.criado_em).toLocaleDateString('pt-BR') : '-'}
                 </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Instance Status */}
-          <Card className="cyber-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5 text-secondary" />
-                Status da Instância
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Nome</span>
-                <span className="text-sm text-muted-foreground">{formData.instancia}</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Conexão</span>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  Conectado
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Próximo Resumo</span>
-                <span className="text-sm text-muted-foreground">{formData.horaResumo}</span>
               </div>
             </CardContent>
           </Card>

@@ -120,11 +120,22 @@ export const createGrupo = async (req, res) => {
       });
     }
 
-    // Criar grupo
+    // Criar grupo com timezone de São Paulo
+    const now = new Date().toLocaleString('en-CA', { 
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(', ', ' ');
+
     const result = await query(
-      `INSERT INTO grupos (nome_grupo, grupo_id_externo, usuario_id, ativo) 
-       VALUES (?, ?, ?, ?)`,
-      [nome_grupo, grupo_id_externo, usuario_id, ativo]
+      `INSERT INTO grupos (nome_grupo, grupo_id_externo, usuario_id, ativo, criado_em) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [nome_grupo, grupo_id_externo, usuario_id, ativo, now]
     );
 
     // Buscar grupo criado

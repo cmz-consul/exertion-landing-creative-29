@@ -234,7 +234,7 @@ export const getInstanceGroups = async (req, res) => {
 
     console.log('👥 Getting groups from Evolution API:', instanceName);
 
-    const response = await fetch(`${EVOLUTION_API_URL}/group/fetchAllGroups/${instanceName}`, {
+    const response = await fetch(`${EVOLUTION_API_URL}/group/fetchAllGroups/${instanceName}?getParticipants=true`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -243,7 +243,9 @@ export const getInstanceGroups = async (req, res) => {
     });
 
     if (!response.ok) {
-      throw new Error('Falha ao buscar grupos');
+      const errorData = await response.text();
+      console.error('❌ Evolution API response error:', response.status, response.statusText, errorData);
+      throw new Error(`Falha ao buscar grupos: ${response.status} ${response.statusText} - ${errorData}`);
     }
 
     const groups = await response.json();
@@ -267,6 +269,7 @@ export const getInstanceGroups = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Get groups error:', error);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: error.message || 'Erro interno do servidor'

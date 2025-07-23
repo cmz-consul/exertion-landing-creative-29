@@ -45,26 +45,31 @@ const Resumos = () => {
 
   // Fetch real data from API
   const { 
-    data: resumosData, 
+    resumos, 
+    pagination,
     isLoading: resumosLoading,
     error: resumosError 
-  } = useResumos(currentPage, itemsPerPage, undefined, undefined, 
+  } = useResumos(
+    currentPage, 
+    itemsPerPage, 
+    undefined, 
+    undefined,
     selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
     selectedStatus !== 'all' ? selectedStatus : undefined
   );
   
   const { data: gruposData } = useGrupos(1, 100);
 
-  const resumos = resumosData?.data || [];
-  const totalPages = resumosData?.pagination?.totalPages || 1;
+  // resumos já vem do hook useResumos
+  const totalPages = pagination?.totalPages || 1;
 
   // Get groups for filter dropdown
   const groups = gruposData?.data || [];
 
   // Client-side filtering for search (server-side filtering handled by API)
-  const filteredResumos = resumos.filter(resumo => {
+  const filteredResumos = (resumos || []).filter(resumo => {
     if (!searchTerm) return true;
-    return resumo.grupo_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    return resumo.grupo?.nome_grupo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            resumo.conteudo?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -211,7 +216,7 @@ const Resumos = () => {
                 <div className="space-y-1">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
-                    {resumo.grupo_nome}
+                    {resumo.grupo?.nome_grupo}
                   </CardTitle>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
@@ -253,7 +258,7 @@ const Resumos = () => {
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                           <Users className="h-5 w-5 text-primary" />
-                          {resumo.grupo_nome}
+                          {resumo.grupo?.nome_grupo}
                         </DialogTitle>
                       </DialogHeader>
                       <div className="mt-4">

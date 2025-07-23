@@ -16,6 +16,7 @@ import Grupos from "@/pages/Grupos";
 import Resumos from "@/pages/Resumos";
 import Settings from "@/pages/Settings";
 import Conexao from "@/pages/Conexao";
+import MeuPlano from "@/pages/MeuPlano";
 
 const queryClient = new QueryClient();
 

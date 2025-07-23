@@ -349,19 +349,22 @@ const Conexao = () => {
           {/* QR Code Display */}
           {status.qrCode && !status.connected && (
             <div className="text-center space-y-4">
-              <div className="bg-white p-6 rounded-lg inline-block">
+              <div className="bg-white p-4 rounded-lg inline-block">
                 <img 
                   src={status.qrCode} 
                   alt="QR Code WhatsApp" 
                   className="w-64 h-64 mx-auto"
+                  style={{ 
+                    filter: 'hue-rotate(240deg) saturate(0) contrast(3) brightness(1.2)'
+                  }}
                 />
               </div>
               
               {/* Timer */}
               {timer > 0 && (
-                <div className="flex items-center justify-center gap-2 text-amber-600">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm font-medium">
+                <div className="flex items-center justify-center gap-2">
+                  <Clock className="h-4 w-4 text-black" />
+                  <span className="text-sm font-medium text-amber-600">
                     Expira em {timer}s
                   </span>
                 </div>
@@ -405,15 +408,15 @@ const Conexao = () => {
           {/* Connected Status */}
           {status.connected && (
             <div className="text-center space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-green-900 mb-2">
+                <h3 className="text-lg font-medium text-green-400 mb-2">
                   WhatsApp Conectado!
                 </h3>
-                <p className="text-sm text-green-700 mb-4">
+                <p className="text-sm text-green-300 mb-4">
                   Sua instância está conectada e pronta para uso
                 </p>
-                <div className="text-xs text-green-600 space-y-1">
+                <div className="text-xs text-green-300 space-y-1">
                   <p>✓ Pronto para enviar mensagens</p>
                   <p>✓ Integração ativa</p>
                   <p>✓ Recebendo mensagens</p>
@@ -438,12 +441,12 @@ const Conexao = () => {
 
           {/* Error Display */}
           {status.error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-red-800">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-red-400">
                 <AlertCircle className="h-4 w-4" />
                 <span className="font-medium">Erro</span>
               </div>
-              <p className="text-sm text-red-700 mt-1">{status.error}</p>
+              <p className="text-sm text-red-300 mt-1">{status.error}</p>
             </div>
           )}
         </CardContent>
