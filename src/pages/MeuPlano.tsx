@@ -77,7 +77,7 @@ const MeuPlano = () => {
               <div className="bg-primary/10 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
                 <Users className="h-6 w-6 text-primary" />
               </div>
-              <p className="font-medium">3 Grupos</p>
+              <p className="font-medium">{user?.max_grupos || 0} Grupos</p>
               <p className="text-sm text-muted-foreground">WhatsApp</p>
             </div>
             <div className="text-center">
@@ -119,7 +119,7 @@ const MeuPlano = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Até 3 grupos WhatsApp</span>
+                <span className="text-sm">Até {user?.max_grupos || 3} grupos WhatsApp</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
@@ -135,7 +135,7 @@ const MeuPlano = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Integração Evolution API</span>
+                <span className="text-sm">Integração WhatsApp avançada</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />

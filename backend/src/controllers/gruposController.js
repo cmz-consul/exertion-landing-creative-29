@@ -111,12 +111,35 @@ export const createGrupo = async (req, res) => {
       });
     }
 
-    // Verificar se usuário existe
-    const users = await query('SELECT id FROM usuarios WHERE id = ?', [usuario_id]);
+    // Verificar se usuário existe e obter limite de grupos
+    const users = await query('SELECT id, max_grupos FROM usuarios WHERE id = ?', [usuario_id]);
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Usuário não encontrado'
+      });
+    }
+
+    const user = users[0];
+    const maxGrupos = user.max_grupos || 0;
+
+    // Verificar quantos grupos o usuário já possui
+    const gruposAtivos = await query(
+      'SELECT COUNT(*) as total FROM grupos WHERE usuario_id = ?', 
+      [usuario_id]
+    );
+    const totalGrupos = gruposAtivos[0].total;
+
+    // Verificar se já atingiu o limite
+    if (totalGrupos >= maxGrupos) {
+      return res.status(400).json({
+        success: false,
+        message: `Limite de grupos atingido. Você pode ter no máximo ${maxGrupos} grupos.`,
+        code: 'LIMIT_EXCEEDED',
+        limits: {
+          current: totalGrupos,
+          maximum: maxGrupos
+        }
       });
     }
 

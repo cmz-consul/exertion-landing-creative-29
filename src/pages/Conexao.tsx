@@ -92,7 +92,7 @@ const Conexao = () => {
     setStatus(prev => ({ ...prev, loading: true, error: null, qrCode: null }));
 
     try {
-      // Call to Evolution API using user's instance from database
+      // Conectar WhatsApp usando instância do usuário
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/evolution/connect`, {
         method: 'POST',
         headers: {
@@ -146,17 +146,17 @@ const Conexao = () => {
       }
 
     } catch (error) {
-      console.error('Evolution API error:', error);
+      console.error('WhatsApp connection error:', error);
       setStatus(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Erro ao conectar com a Evolution API'
+        error: error.message || 'Erro ao conectar com WhatsApp'
       }));
 
       toast({
         variant: "destructive",
         title: "Erro na conexão",
-        description: error.message || "Não foi possível conectar com a Evolution API."
+        description: error.message || "Não foi possível conectar com WhatsApp."
       });
     }
   };

@@ -133,6 +133,19 @@ const Grupos = () => {
   const handleAddGrupo = async () => {
     if (!user) return;
 
+    // Verificar limite de grupos antes de adicionar
+    const maxGrupos = user.max_grupos || 0;
+    const gruposAtuais = grupos.length;
+
+    if (gruposAtuais >= maxGrupos) {
+      toast({
+        variant: "destructive",
+        title: "Limite atingido",
+        description: `Você já possui ${gruposAtuais} de ${maxGrupos} grupos permitidos. Upgrade seu plano para adicionar mais grupos.`
+      });
+      return;
+    }
+
     // Se um grupo da Evolution foi selecionado, usar seus dados
     if (selectedEvolutionGroup) {
       try {
@@ -151,11 +164,11 @@ const Grupos = () => {
         setModalOpen(false);
         setSelectedEvolutionGroup(null);
         setEvolutionSearchTerm('');
-      } catch (error) {
+      } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Não foi possível adicionar o grupo."
+          description: error?.message || "Não foi possível adicionar o grupo."
         });
       }
     } else if (grupoNome) {
@@ -176,11 +189,11 @@ const Grupos = () => {
         setModalOpen(false);
         setGrupoNome('');
         setGrupoIdExterno('');
-      } catch (error) {
+      } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Não foi possível adicionar o grupo."
+          description: error?.message || "Não foi possível adicionar o grupo."
         });
       }
     }
@@ -253,6 +266,25 @@ const Grupos = () => {
           <p className="text-muted-foreground">
             Gerencie os grupos conectados à sua instância
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-muted-foreground">
+              {grupos.length} de {user?.max_grupos || 0} grupos utilizados
+            </span>
+            <div className="flex-1 bg-muted rounded-full h-2 max-w-32">
+              <div 
+                className={`h-2 rounded-full transition-all ${
+                  grupos.length >= (user?.max_grupos || 0) 
+                    ? 'bg-red-500' 
+                    : grupos.length >= (user?.max_grupos || 0) * 0.8 
+                      ? 'bg-yellow-500' 
+                      : 'bg-green-500'
+                }`}
+                style={{ 
+                  width: `${Math.min(100, (grupos.length / (user?.max_grupos || 1)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
         </div>
         
         <div className="flex gap-2">
@@ -279,17 +311,19 @@ const Grupos = () => {
               <Button 
                 variant="outline"
                 className="cyber-button-outline"
+                disabled={grupos.length >= (user?.max_grupos || 0)}
+                title={grupos.length >= (user?.max_grupos || 0) ? 'Limite de grupos atingido' : ''}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Grupo
+                {grupos.length >= (user?.max_grupos || 0) ? 'Limite Atingido' : 'Adicionar Grupo'}
               </Button>
             </DialogTrigger>
             <DialogContent className="cyber-card max-w-2xl max-h-[80vh]">
               <DialogHeader>
-                <DialogTitle>Adicionar Grupo da Evolution API</DialogTitle>
+                <DialogTitle>Adicionar Grupo do WhatsApp</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {/* Busca nos grupos da Evolution */}
+                {/* Busca nos grupos do WhatsApp */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Buscar grupos do WhatsApp
@@ -305,7 +339,7 @@ const Grupos = () => {
                   </div>
                 </div>
 
-                {/* Lista de grupos da Evolution */}
+                {/* Lista de grupos do WhatsApp */}
                 <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
                   {evolutionLoading ? (
                     <div className="flex items-center justify-center py-8">
@@ -314,7 +348,7 @@ const Grupos = () => {
                     </div>
                   ) : evolutionError ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      Erro ao carregar grupos da Evolution API
+                      Erro ao carregar grupos do WhatsApp
                     </div>
                   ) : filteredEvolutionGroups.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
@@ -493,7 +527,7 @@ const Grupos = () => {
             <p className="text-muted-foreground text-center mb-4">
               {searchTerm 
                 ? 'Nenhum grupo corresponde à sua busca.'
-                : 'Adicione grupos da Evolution API para começar.'
+                : 'Adicione grupos do WhatsApp para começar.'
               }
             </p>
             {!searchTerm && (
