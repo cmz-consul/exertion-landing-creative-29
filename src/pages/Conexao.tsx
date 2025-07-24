@@ -97,7 +97,7 @@ const Conexao = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('intellizap_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('intellizapp_token')}`
         },
         body: JSON.stringify({ 
           instanceName: status.instanceName,
@@ -168,7 +168,7 @@ const Conexao = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/evolution/status/${instance}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('intellizap_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('intellizapp_token')}`
         }
       });
 
@@ -229,7 +229,7 @@ const Conexao = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/evolution/disconnect/${status.instanceName}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('intellizap_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('intellizapp_token')}`
         }
       });
 

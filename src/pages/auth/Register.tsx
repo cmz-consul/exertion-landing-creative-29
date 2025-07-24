@@ -71,7 +71,7 @@ const Register = () => {
       navigate('/dashboard');
       toast({
         title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao Intellizap.IA"
+        description: "Bem-vindo ao Intellizapp.IA"
       });
     } catch (error) {
       toast({
@@ -100,7 +100,7 @@ const Register = () => {
               Criar Conta
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Cadastre-se no Intellizap.IA
+              Cadastre-se no Intellizapp.IA
             </CardDescription>
           </div>
         </CardHeader>
