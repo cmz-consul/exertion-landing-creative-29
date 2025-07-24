@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useGrupos } from '@/hooks/useGrupos';
+import { useEvolutionGroups } from '@/hooks/useEvolutionGroups';
 import { Grupo } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,6 +41,9 @@ const Grupos = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [grupoNome, setGrupoNome] = useState('');
   const [grupoIdExterno, setGrupoIdExterno] = useState('');
+  const [selectedEvolutionGroup, setSelectedEvolutionGroup] = useState<any>(null);
+  const [evolutionSearchTerm, setEvolutionSearchTerm] = useState('');
+  
   
   const {
     grupos,
@@ -54,8 +58,22 @@ const Grupos = () => {
     isCreating
   } = useGrupos();
 
+  // Buscar grupos da Evolution API - usar o nome do usuário como instância
+  const instanceName = user?.nome || 'Miqueias';
+  const {
+    evolutionGroups,
+    isLoading: evolutionLoading,
+    error: evolutionError,
+    refetch: refetchEvolutionGroups
+  } = useEvolutionGroups(instanceName);
+
   const filteredGroups = grupos.filter(grupo =>
     grupo.nome_grupo?.toLowerCase().includes(searchTerm.toLowerCase()) || false
+  );
+
+  // Filtrar grupos da Evolution API
+  const filteredEvolutionGroups = evolutionGroups.filter(group =>
+    group.nome_grupo?.toLowerCase().includes(evolutionSearchTerm.toLowerCase()) || false
   );
 
   const handleToggleActive = async (id: number, currentStatus: boolean) => {
@@ -113,30 +131,71 @@ const Grupos = () => {
   };
 
   const handleAddGrupo = async () => {
-    if (!grupoNome || !user) return;
+    if (!user) return;
 
-    try {
-      createGrupo({
-        nome_grupo: grupoNome,
-        grupo_id_externo: grupoIdExterno,
-        usuario_id: user.id,
-        ativo: true
-      });
+    // Verificar limite de grupos antes de adicionar
+    const maxGrupos = user.max_grupos || 0;
+    const gruposAtuais = grupos.length;
 
-      toast({
-        title: "Grupo adicionado",
-        description: "O grupo foi adicionado com sucesso."
-      });
-
-      setModalOpen(false);
-      setGrupoNome('');
-      setGrupoIdExterno('');
-    } catch (error) {
+    if (gruposAtuais >= maxGrupos) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível adicionar o grupo."
+        title: "Limite atingido",
+        description: `Você já possui ${gruposAtuais} de ${maxGrupos} grupos permitidos. Upgrade seu plano para adicionar mais grupos.`
       });
+      return;
+    }
+
+    // Se um grupo da Evolution foi selecionado, usar seus dados
+    if (selectedEvolutionGroup) {
+      try {
+        createGrupo({
+          nome_grupo: selectedEvolutionGroup.nome_grupo,
+          grupo_id_externo: selectedEvolutionGroup.grupo_id_externo,
+          usuario_id: user.id,
+          ativo: true
+        });
+
+        toast({
+          title: "Grupo adicionado",
+          description: "O grupo foi adicionado com sucesso."
+        });
+
+        setModalOpen(false);
+        setSelectedEvolutionGroup(null);
+        setEvolutionSearchTerm('');
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: error?.message || "Não foi possível adicionar o grupo."
+        });
+      }
+    } else if (grupoNome) {
+      // Modo manual (fallback)
+      try {
+        createGrupo({
+          nome_grupo: grupoNome,
+          grupo_id_externo: grupoIdExterno,
+          usuario_id: user.id,
+          ativo: true
+        });
+
+        toast({
+          title: "Grupo adicionado",
+          description: "O grupo foi adicionado com sucesso."
+        });
+
+        setModalOpen(false);
+        setGrupoNome('');
+        setGrupoIdExterno('');
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: error?.message || "Não foi possível adicionar o grupo."
+        });
+      }
     }
   };
 
@@ -207,6 +266,25 @@ const Grupos = () => {
           <p className="text-muted-foreground">
             Gerencie os grupos conectados à sua instância
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-muted-foreground">
+              {grupos.length} de {user?.max_grupos || 0} grupos utilizados
+            </span>
+            <div className="flex-1 bg-muted rounded-full h-2 max-w-32">
+              <div 
+                className={`h-2 rounded-full transition-all ${
+                  grupos.length >= (user?.max_grupos || 0) 
+                    ? 'bg-red-500' 
+                    : grupos.length >= (user?.max_grupos || 0) * 0.8 
+                      ? 'bg-yellow-500' 
+                      : 'bg-green-500'
+                }`}
+                style={{ 
+                  width: `${Math.min(100, (grupos.length / (user?.max_grupos || 1)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
         </div>
         
         <div className="flex gap-2">
@@ -233,51 +311,114 @@ const Grupos = () => {
               <Button 
                 variant="outline"
                 className="cyber-button-outline"
+                disabled={grupos.length >= (user?.max_grupos || 0)}
+                title={grupos.length >= (user?.max_grupos || 0) ? 'Limite de grupos atingido' : ''}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Grupo
+                {grupos.length >= (user?.max_grupos || 0) ? 'Limite Atingido' : 'Adicionar Grupo'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="cyber-card">
+            <DialogContent className="cyber-card max-w-2xl max-h-[80vh]">
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Grupo</DialogTitle>
+                <DialogTitle>Adicionar Grupo do WhatsApp</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                {/* Busca nos grupos do WhatsApp */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Nome do Grupo *
+                    Buscar grupos do WhatsApp
                   </label>
-                  <Input
-                    value={grupoNome}
-                    onChange={(e) => setGrupoNome(e.target.value)}
-                    placeholder="Digite o nome do grupo"
-                    className="cyber-border"
-                  />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={evolutionSearchTerm}
+                      onChange={(e) => setEvolutionSearchTerm(e.target.value)}
+                      placeholder="Digite o nome do grupo..."
+                      className="pl-10 cyber-border"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    ID do Grupo (WhatsApp)
-                  </label>
-                  <Input
-                    value={grupoIdExterno}
-                    onChange={(e) => setGrupoIdExterno(e.target.value)}
-                    placeholder="120363028264952334@g.us"
-                    className="cyber-border"
-                  />
+
+                {/* Lista de grupos do WhatsApp */}
+                <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
+                  {evolutionLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Carregando grupos...
+                    </div>
+                  ) : evolutionError ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Erro ao carregar grupos do WhatsApp
+                    </div>
+                  ) : filteredEvolutionGroups.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {evolutionSearchTerm ? 'Nenhum grupo encontrado' : 'Nenhum grupo disponível'}
+                    </div>
+                  ) : (
+                    filteredEvolutionGroups.map((group, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedEvolutionGroup?.grupo_id_externo === group.grupo_id_externo
+                            ? 'bg-primary/10 border-primary'
+                            : 'hover:bg-muted/30'
+                        }`}
+                        onClick={() => setSelectedEvolutionGroup(group)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{group.nome_grupo}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {group.participantes} participantes
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {group.grupo_id_externo?.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
+
+                {/* Modo manual (fallback) */}
+                <div className="pt-4 border-t">
+                  <div className="text-sm font-medium mb-2">Ou adicionar manualmente:</div>
+                  <div className="space-y-2">
+                    <Input
+                      value={grupoNome}
+                      onChange={(e) => setGrupoNome(e.target.value)}
+                      placeholder="Nome do grupo"
+                      className="cyber-border"
+                    />
+                    <Input
+                      value={grupoIdExterno}
+                      onChange={(e) => setGrupoIdExterno(e.target.value)}
+                      placeholder="ID do grupo (120363028264952334@g.us)"
+                      className="cyber-border"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setModalOpen(false)}
+                    onClick={() => {
+                      setModalOpen(false);
+                      setSelectedEvolutionGroup(null);
+                      setEvolutionSearchTerm('');
+                      setGrupoNome('');
+                      setGrupoIdExterno('');
+                    }}
                   >
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleAddGrupo}
-                    disabled={!grupoNome || isCreating}
+                    disabled={(!selectedEvolutionGroup && !grupoNome) || isCreating}
                     className="cyber-button"
                   >
-                    {isCreating ? 'Adicionando...' : 'Adicionar'}
+                    {isCreating ? 'Adicionando...' : 'Adicionar Grupo'}
                   </Button>
                 </div>
               </div>
@@ -386,61 +527,17 @@ const Grupos = () => {
             <p className="text-muted-foreground text-center mb-4">
               {searchTerm 
                 ? 'Nenhum grupo corresponde à sua busca.'
-                : 'Adicione grupos da Evolution API para começar.'
+                : 'Adicione grupos do WhatsApp para começar.'
               }
             </p>
             {!searchTerm && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="cyber-button">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Adicionar Grupos
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="cyber-card">
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Novo Grupo</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Nome do Grupo *
-                      </label>
-                      <Input
-                        value={grupoNome}
-                        onChange={(e) => setGrupoNome(e.target.value)}
-                        placeholder="Digite o nome do grupo"
-                        className="cyber-border"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        ID do Grupo (WhatsApp)
-                      </label>
-                      <Input
-                        value={grupoIdExterno}
-                        onChange={(e) => setGrupoIdExterno(e.target.value)}
-                        placeholder="120363028264952334@g.us"
-                        className="cyber-border"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-4">
-                      <DialogTrigger asChild>
-                        <Button variant="outline">
-                          Cancelar
-                        </Button>
-                      </DialogTrigger>
-                      <Button
-                        onClick={handleAddGrupo}
-                        disabled={!grupoNome || isCreating}
-                        className="cyber-button"
-                      >
-                        {isCreating ? 'Adicionando...' : 'Adicionar'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                className="cyber-button"
+                onClick={() => setModalOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Grupos
+              </Button>
             )}
           </CardContent>
         </Card>

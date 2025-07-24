@@ -111,8 +111,8 @@ export const createGrupo = async (req, res) => {
       });
     }
 
-    // Verificar se usuário existe
-    const users = await query('SELECT id FROM usuarios WHERE id = ?', [usuario_id]);
+    // Verificar se usuário existe e obter limite de grupos
+    const users = await query('SELECT id, max_grupos FROM usuarios WHERE id = ?', [usuario_id]);
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
@@ -120,11 +120,45 @@ export const createGrupo = async (req, res) => {
       });
     }
 
-    // Criar grupo
+    const user = users[0];
+    const maxGrupos = user.max_grupos || 0;
+
+    // Verificar quantos grupos o usuário já possui
+    const gruposAtivos = await query(
+      'SELECT COUNT(*) as total FROM grupos WHERE usuario_id = ?', 
+      [usuario_id]
+    );
+    const totalGrupos = gruposAtivos[0].total;
+
+    // Verificar se já atingiu o limite
+    if (totalGrupos >= maxGrupos) {
+      return res.status(400).json({
+        success: false,
+        message: `Limite de grupos atingido. Você pode ter no máximo ${maxGrupos} grupos.`,
+        code: 'LIMIT_EXCEEDED',
+        limits: {
+          current: totalGrupos,
+          maximum: maxGrupos
+        }
+      });
+    }
+
+    // Criar grupo com timezone de São Paulo
+    const now = new Date().toLocaleString('en-CA', { 
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(', ', ' ');
+
     const result = await query(
-      `INSERT INTO grupos (nome_grupo, grupo_id_externo, usuario_id, ativo) 
-       VALUES (?, ?, ?, ?)`,
-      [nome_grupo, grupo_id_externo, usuario_id, ativo]
+      `INSERT INTO grupos (nome_grupo, grupo_id_externo, usuario_id, ativo, criado_em) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [nome_grupo, grupo_id_externo, usuario_id, ativo, now]
     );
 
     // Buscar grupo criado

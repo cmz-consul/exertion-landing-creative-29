@@ -6,7 +6,9 @@ export const useResumos = (
   page: number = 1,
   limit: number = 20,
   dataInicio?: string,
-  dataFim?: string
+  dataFim?: string,
+  grupoId?: number,
+  status?: string
 ) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -17,9 +19,9 @@ export const useResumos = (
     error,
     refetch
   } = useQuery({
-    queryKey: ['resumos', user?.id, page, limit, dataInicio, dataFim],
+    queryKey: ['resumos', user?.id, page, limit, dataInicio, dataFim, grupoId, status],
     queryFn: () => 
-      user ? apiService.getResumos(user.id, page, limit, dataInicio, dataFim) : Promise.resolve(null),
+      user ? apiService.getResumos(user.id, page, limit, dataInicio, dataFim, grupoId, status) : Promise.resolve(null),
     enabled: !!user?.id,
   });
 

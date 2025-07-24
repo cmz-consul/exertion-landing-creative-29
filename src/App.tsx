@@ -16,6 +16,7 @@ import Grupos from "@/pages/Grupos";
 import Resumos from "@/pages/Resumos";
 import Settings from "@/pages/Settings";
 import Conexao from "@/pages/Conexao";
+import MeuPlano from "@/pages/MeuPlano";
 
 const queryClient = new QueryClient();
 
@@ -58,11 +59,32 @@ const App = () => (
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<Dashboard />} />
-              <Route path="grupos" element={<Grupos />} />
-              <Route path="resumos" element={<Resumos />} />
-              <Route path="conexao" element={<Conexao />} />
-              <Route path="settings" element={<Settings />} />
+              <Route index element={
+                <ProtectedRoute requiresActivePlan={true}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="grupos" element={
+                <ProtectedRoute requiresActivePlan={true}>
+                  <Grupos />
+                </ProtectedRoute>
+              } />
+              <Route path="resumos" element={
+                <ProtectedRoute requiresActivePlan={true}>
+                  <Resumos />
+                </ProtectedRoute>
+              } />
+              <Route path="conexao" element={
+                <ProtectedRoute requiresActivePlan={true}>
+                  <Conexao />
+                </ProtectedRoute>
+              } />
+              <Route path="settings" element={
+                <ProtectedRoute requiresActivePlan={true}>
+                  <Settings />
+                </ProtectedRoute>
+              } />
+              <Route path="meu-plano" element={<MeuPlano />} />
             </Route>
             
             {/* Redirect root to dashboard */}

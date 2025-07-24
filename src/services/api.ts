@@ -188,6 +188,15 @@ class ApiService {
     return this.request(`/api/dashboard/insights?usuario_id=${usuarioId}`);
   }
 
+  // Evolution API endpoints
+  async getEvolutionGroups(instanceName: string, userId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/evolution/groups/${instanceName}?userId=${userId}`);
+  }
+
+  async getEvolutionStatus(instanceName: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/evolution/status/${instanceName}`);
+  }
+
   // Health check
   async health(): Promise<{ status: string; timestamp: string }> {
     return this.request('/health');

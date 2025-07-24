@@ -18,13 +18,19 @@ export const connectInstance = async (req, res) => {
     console.log('🔗 Connecting to Evolution API:', { instanceName });
 
     // First check if instance already exists
+    const statusController = new AbortController();
+    const statusTimeout = setTimeout(() => statusController.abort(), 15000); // 15 seconds timeout
+    
     const statusResponse = await fetch(`${EVOLUTION_API_URL}/instance/fetchInstances`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'apikey': EVOLUTION_API_KEY
-      }
+      },
+      signal: statusController.signal
     });
+    
+    clearTimeout(statusTimeout);
 
     let existingInstance = null;
     if (statusResponse.ok) {
@@ -120,9 +126,17 @@ export const connectInstance = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Evolution connect error:', error);
+    
+    let errorMessage = 'Erro interno do servidor';
+    if (error.name === 'AbortError') {
+      errorMessage = 'Timeout ao conectar com WhatsApp. Tente novamente.';
+    } else if (error.message) {
+      errorMessage = error.message.replace(/Evolution API/gi, 'WhatsApp');
+    }
+    
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro interno do servidor'
+      message: errorMessage
     });
   }
 };
@@ -134,13 +148,19 @@ export const getInstanceStatus = async (req, res) => {
     console.log('🔍 Checking instance status:', instanceName);
 
     // First try to get all instances and filter by name
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+    
     const response = await fetch(`${EVOLUTION_API_URL}/instance/fetchInstances`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'apikey': EVOLUTION_API_KEY
-      }
+      },
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error('❌ Failed to fetch instances:', response.status, response.statusText);
@@ -177,9 +197,17 @@ export const getInstanceStatus = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Get instance status error:', error);
+    
+    let errorMessage = 'Erro interno do servidor';
+    if (error.name === 'AbortError') {
+      errorMessage = 'Timeout ao verificar status do WhatsApp. Tente novamente.';
+    } else if (error.message) {
+      errorMessage = error.message.replace(/Evolution API/gi, 'WhatsApp');
+    }
+    
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro interno do servidor'
+      message: errorMessage
     });
   }
 };
@@ -213,9 +241,17 @@ export const disconnectInstance = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Disconnect instance error:', error);
+    
+    let errorMessage = 'Erro interno do servidor';
+    if (error.name === 'AbortError') {
+      errorMessage = 'Timeout ao desconectar WhatsApp. Tente novamente.';
+    } else if (error.message) {
+      errorMessage = error.message.replace(/Evolution API/gi, 'WhatsApp');
+    }
+    
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro interno do servidor'
+      message: errorMessage
     });
   }
 };
@@ -234,42 +270,126 @@ export const getInstanceGroups = async (req, res) => {
 
     console.log('👥 Getting groups from Evolution API:', instanceName);
 
-    const response = await fetch(`${EVOLUTION_API_URL}/group/fetchAllGroups/${instanceName}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': EVOLUTION_API_KEY
+    // First check if instance is connected
+    const statusController = new AbortController();
+    const statusTimeout = setTimeout(() => statusController.abort(), 10000);
+    
+    try {
+      const statusResponse = await fetch(`${EVOLUTION_API_URL}/instance/fetchInstances`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': EVOLUTION_API_KEY
+        },
+        signal: statusController.signal
+      });
+      
+      clearTimeout(statusTimeout);
+      
+      if (statusResponse.ok) {
+        const instances = await statusResponse.json();
+        const instance = instances.find(inst => inst.name === instanceName);
+        
+        if (!instance) {
+          return res.status(400).json({
+            success: false,
+            message: 'Instância do WhatsApp não encontrada. Verifique se está conectado.'
+          });
+        }
+        
+        if (instance.connectionStatus !== 'open') {
+          return res.status(400).json({
+            success: false,
+            message: 'WhatsApp não está conectado. Conecte primeiro na aba Conexão.'
+          });
+        }
+        
+        console.log('✅ Instance is connected, fetching groups...');
       }
-    });
-
-    if (!response.ok) {
-      throw new Error('Falha ao buscar grupos');
+    } catch (statusError) {
+      clearTimeout(statusTimeout);
+      console.warn('⚠️ Could not verify instance status, proceeding anyway:', statusError.message);
     }
 
-    const groups = await response.json();
-    console.log(`📱 Found ${groups.length} groups`);
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 300 seconds timeout (5 minutes)
 
-    // Format groups for our database
-    const formattedGroups = groups.map(group => ({
-      nome_grupo: group.subject || 'Sem nome',
-      grupo_id_externo: group.id,
-      usuario_id: parseInt(userId),
-      ativo: true,
-      participantes: group.participants?.length || 0,
-      descricao: group.desc || null
-    }));
+    try {
+      const response = await fetch(`${EVOLUTION_API_URL}/group/fetchAllGroups/${instanceName}?getParticipants=true`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': EVOLUTION_API_KEY
+        },
+        signal: controller.signal
+      });
 
-    res.json({
-      success: true,
-      message: `${groups.length} grupos encontrados`,
-      data: formattedGroups
-    });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('❌ Evolution API response error:', response.status, response.statusText, errorData);
+        
+        // Handle specific timeout or connection errors
+        if (response.status === 500 && errorData.includes('Timed Out')) {
+          throw new Error('WhatsApp está demorando para responder. Tente novamente em alguns minutos.');
+        }
+        
+        throw new Error(`Falha ao buscar grupos: ${response.status} ${response.statusText}`);
+      }
+
+      const groups = await response.json();
+      console.log(`📱 Found ${groups.length} groups`);
+
+      // Check if groups is an array
+      if (!Array.isArray(groups)) {
+        console.error('❌ Groups response is not an array:', groups);
+        throw new Error('Formato de resposta inválido do WhatsApp');
+      }
+
+      // Format groups for our database
+      const formattedGroups = groups.map(group => ({
+        nome_grupo: group.subject || 'Sem nome',
+        grupo_id_externo: group.id,
+        usuario_id: parseInt(userId),
+        ativo: true,
+        participantes: group.participants?.length || 0,
+        descricao: group.desc || null
+      }));
+
+      res.json({
+        success: true,
+        message: `${groups.length} grupos encontrados`,
+        data: formattedGroups
+      });
+
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Timeout ao buscar grupos. WhatsApp está demorando para responder.');
+      }
+      
+      throw fetchError;
+    }
 
   } catch (error) {
     console.error('❌ Get groups error:', error);
+    console.error('❌ Stack trace:', error.stack);
+    
+    // Send more user-friendly error messages
+    let errorMessage = 'Erro interno do servidor';
+    
+    if (error.message.includes('Timeout') || error.message.includes('demorando')) {
+      errorMessage = 'WhatsApp está demorando para responder. Verifique se está conectado e tente novamente.';
+    } else if (error.message.includes('Falha ao buscar grupos')) {
+      errorMessage = 'Não foi possível buscar os grupos. Verifique se o WhatsApp está conectado.';
+    }
+    
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro interno do servidor'
+      message: errorMessage
     });
   }
 };

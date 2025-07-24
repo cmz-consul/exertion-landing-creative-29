@@ -1,4 +1,4 @@
-import { query } from '../config/database.js';
+import { getConnection } from '../config/database.js';
 
 export const getDashboardStats = async (req, res) => {
   try {
@@ -11,40 +11,44 @@ export const getDashboardStats = async (req, res) => {
       });
     }
 
+    const connection = getConnection();
+
+    const userId = parseInt(usuario_id);
+
     // Get total groups for user
-    const totalGroupsResult = await query(
+    const [totalGroupsResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM grupos WHERE usuario_id = ?',
-      [usuario_id]
+      [userId]
     );
     
     // Get active groups for user
-    const activeGroupsResult = await query(
+    const [activeGroupsResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM grupos WHERE usuario_id = ? AND ativo = 1',
-      [usuario_id]
+      [userId]
     );
     
     // Get total resumes for user
-    const totalResumesResult = await query(
+    const [totalResumesResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM resumos WHERE usuario_id = ?',
-      [usuario_id]
+      [userId]
     );
     
     // Get total messages processed for user
-    const messagesProcessedResult = await query(
+    const [messagesProcessedResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM mensagens WHERE usuario_id = ?',
-      [usuario_id]
+      [userId]
     );
     
     // Get resumes created today
-    const resumosHojeResult = await query(
+    const [resumosHojeResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM resumos WHERE usuario_id = ? AND DATE(data_criacao) = CURDATE()',
-      [usuario_id]
+      [userId]
     );
     
     // Get messages created today
-    const mensagensHojeResult = await query(
+    const [mensagensHojeResult] = await connection.execute(
       'SELECT COUNT(*) as count FROM mensagens WHERE usuario_id = ? AND DATE(data_mensagem) = CURDATE()',
-      [usuario_id]
+      [userId]
     );
 
     const stats = {
@@ -81,9 +85,10 @@ export const getRecentActivity = async (req, res) => {
       });
     }
 
-    // Get recent resume activity with group names - if no resumos exist, return empty array
-    const activities = await query(
-      `SELECT 
+    const connection = getConnection();
+
+    // Get recent resume activity with group names using literal query
+    const activitySql = `SELECT 
         r.id,
         g.nome_grupo as grupo_nome,
         r.data_envio,
@@ -92,12 +97,12 @@ export const getRecentActivity = async (req, res) => {
         r.total_mensagens
       FROM resumos r 
       JOIN grupos g ON r.grupo_id = g.id 
-      WHERE r.usuario_id = ? 
+      WHERE r.usuario_id = ${parseInt(usuario_id)}
       ORDER BY 
         COALESCE(r.data_envio, r.data_criacao) DESC 
-      LIMIT ?`,
-      [usuario_id, parseInt(limit)]
-    );
+      LIMIT ${parseInt(limit)}`;
+    
+    const [activities] = await connection.execute(activitySql);
 
     // Format the data
     const formattedActivities = activities.map(activity => ({
@@ -134,8 +139,11 @@ export const getSystemInsights = async (req, res) => {
       });
     }
 
+    const connection = getConnection();
+    const userId = parseInt(usuario_id);
+
     // Get most active group
-    const mostActiveGroup = await query(
+    const [mostActiveGroup] = await connection.execute(
       `SELECT g.nome_grupo, COUNT(m.id) as total_mensagens 
        FROM grupos g 
        LEFT JOIN mensagens m ON g.id = m.grupo_id 
@@ -143,31 +151,31 @@ export const getSystemInsights = async (req, res) => {
        GROUP BY g.id, g.nome_grupo 
        ORDER BY total_mensagens DESC 
        LIMIT 1`,
-      [usuario_id]
+      [userId]
     );
 
     // Get average messages per day in last 7 days
-    const avgMessagesPerDay = await query(
+    const [avgMessagesPerDay] = await connection.execute(
       `SELECT ROUND(COUNT(*) / 7, 1) as media_diaria
        FROM mensagens 
        WHERE usuario_id = ? 
        AND data_mensagem >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`,
-      [usuario_id]
+      [userId]
     );
 
     // Get last resume sent time
-    const lastResumeTime = await query(
+    const [lastResumeTime] = await connection.execute(
       `SELECT data_envio, g.nome_grupo
        FROM resumos r
        JOIN grupos g ON r.grupo_id = g.id
        WHERE r.usuario_id = ? AND r.data_envio IS NOT NULL
        ORDER BY r.data_envio DESC
        LIMIT 1`,
-      [usuario_id]
+      [userId]
     );
 
     // Get productivity score based on resumos vs groups ratio
-    const productivity = await query(
+    const [productivity] = await connection.execute(
       `SELECT 
         COUNT(DISTINCT g.id) as grupos_ativos,
         COUNT(DISTINCT r.id) as resumos_gerados,
@@ -180,7 +188,7 @@ export const getSystemInsights = async (req, res) => {
        FROM grupos g
        LEFT JOIN resumos r ON g.id = r.grupo_id AND r.data_criacao >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
        WHERE g.usuario_id = ? AND g.ativo = 1`,
-      [usuario_id]
+      [userId]
     );
 
     const insights = {

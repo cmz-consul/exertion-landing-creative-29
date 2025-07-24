@@ -1,5 +1,5 @@
-import React from 'react';
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Outlet, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   LayoutDashboard, 
@@ -10,7 +10,8 @@ import {
   Bot,
   Menu,
   X,
-  Smartphone
+  Smartphone,
+  Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -18,18 +19,27 @@ import { useState } from 'react';
 const DashboardLayout = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" replace />;
   }
 
+  // Redirecionar usuários sem plano ativo para página Meu Plano
+  useEffect(() => {
+    if (user && user.plano_ativo !== 1 && location.pathname !== '/dashboard/meu-plano') {
+      navigate('/dashboard/meu-plano', { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
+
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Grupos', href: '/dashboard/grupos', icon: Users },
-    { name: 'Resumos', href: '/dashboard/resumos', icon: FileText },
-    { name: 'Conexão', href: '/dashboard/conexao', icon: Smartphone },
-    { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, requiresActivePlan: true },
+    { name: 'Grupos', href: '/dashboard/grupos', icon: Users, requiresActivePlan: true },
+    { name: 'Resumos', href: '/dashboard/resumos', icon: FileText, requiresActivePlan: true },
+    { name: 'Conexão', href: '/dashboard/conexao', icon: Smartphone, requiresActivePlan: true },
+    { name: 'Configurações', href: '/dashboard/settings', icon: Settings, requiresActivePlan: true },
+    { name: 'Meu Plano', href: '/dashboard/meu-plano', icon: Crown, requiresActivePlan: false },
   ];
 
   const isActiveRoute = (href: string) => {
@@ -73,28 +83,30 @@ const DashboardLayout = () => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActiveRoute(item.href);
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`
-                    flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                    ${isActive 
-                      ? 'bg-primary/20 text-primary' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }
-                  `}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
+            {navigation
+              .filter(item => !item.requiresActivePlan || user?.plano_ativo === 1)
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = isActiveRoute(item.href);
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`
+                      flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                      ${isActive 
+                        ? 'bg-primary/20 text-primary' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }
+                    `}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                );
+              })}
           </nav>
 
           {/* User info and logout */}

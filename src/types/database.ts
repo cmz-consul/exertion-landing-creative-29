@@ -4,6 +4,7 @@ export interface Usuario {
   instancia: string;
   email: string | null;
   plano_ativo: boolean;
+  max_grupos: number;
   horaResumo: string | null;
   resumoDiaAnterior: boolean;
   transcricao_ativa: boolean;
