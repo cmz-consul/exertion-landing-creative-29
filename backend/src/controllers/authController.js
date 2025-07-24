@@ -17,8 +17,8 @@ export const login = async (req, res) => {
 
     // Buscar usuário pelo email
     const users = await query(
-      `SELECT id, nome, email, senha, instancia, plano_ativo, max_grupos, horaResumo, 
-              resumoDiaAnterior, transcricao_ativa, \`transcricao-pvd\`, 
+      `SELECT id, nome, email, senha, instancia, plano_ativo, max_grupos, tokens_mes, \`dia-renovacao-tokens\`,
+              horaResumo, resumoDiaAnterior, transcricao_ativa, \`transcricao-pvd\`, 
               transcreverEu, ambiente, \`key-openai\`, ludico, 
               agendamento, criado_em 
        FROM usuarios 

@@ -24,7 +24,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    const token = localStorage.getItem('intellizap_token');
+    const token = localStorage.getItem('intellizapp_token');
     
     const config: RequestInit = {
       ...options,

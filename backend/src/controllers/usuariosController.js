@@ -5,8 +5,8 @@ export const getUser = async (req, res) => {
     const { id } = req.params;
 
     const users = await query(
-      `SELECT id, nome, email, instancia, plano_ativo, max_grupos, horaResumo, 
-              resumoDiaAnterior, transcricao_ativa, \`transcricao-pvd\`, 
+      `SELECT id, nome, email, instancia, plano_ativo, max_grupos, tokens_mes, \`dia-renovacao-tokens\`,
+              horaResumo, resumoDiaAnterior, transcricao_ativa, \`transcricao-pvd\`, 
               transcreverEu, ambiente, \`key-openai\`, ludico, agendamento, criado_em 
        FROM usuarios 
        WHERE id = ?`,

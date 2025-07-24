@@ -40,12 +40,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // LIMPAR CACHE SEMPRE - DADOS FRESCOS DO BANCO
       console.log('🗑️ LIMPANDO CACHE LOCALSTORAGE');
       
-      const storedToken = localStorage.getItem('intellizap_token');
+      const storedToken = localStorage.getItem('intellizapp_token');
       let storedUserId = null;
       
       // Tentar pegar apenas o ID do usuário, ignorar resto dos dados
       try {
-        const storedUser = localStorage.getItem('intellizap_user');
+        const storedUser = localStorage.getItem('intellizapp_user');
         if (storedUser) {
           const userData = JSON.parse(storedUser);
           storedUserId = userData.id;
@@ -72,19 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             // Usar dados frescos do banco
             setUser(response.data);
-            localStorage.setItem('intellizap_user', JSON.stringify(response.data));
+            localStorage.setItem('intellizapp_user', JSON.stringify(response.data));
           } else {
             // Backend retornou erro, limpar tudo
             console.error('❌ Backend retornou erro, limpando sessão');
-            localStorage.removeItem('intellizap_user');
-            localStorage.removeItem('intellizap_token');
+            localStorage.removeItem('intellizapp_user');
+            localStorage.removeItem('intellizapp_token');
             setUser(null);
           }
         } catch (error) {
           // Backend não está funcionando - limpar tudo
           console.error('❌ Backend não funcional, limpando sessão:', error);
-          localStorage.removeItem('intellizap_user');
-          localStorage.removeItem('intellizap_token');
+          localStorage.removeItem('intellizapp_user');
+          localStorage.removeItem('intellizapp_token');
           setUser(null);
         }
       }
@@ -101,8 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (response.success && response.data) {
         setUser(response.data.user);
-        localStorage.setItem('intellizap_user', JSON.stringify(response.data.user));
-        localStorage.setItem('intellizap_token', response.data.token);
+        localStorage.setItem('intellizapp_user', JSON.stringify(response.data.user));
+        localStorage.setItem('intellizapp_token', response.data.token);
       } else {
         throw new Error(response.message || 'Login failed');
       }
@@ -121,8 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (response.success && response.data) {
         setUser(response.data.user);
-        localStorage.setItem('intellizap_user', JSON.stringify(response.data.user));
-        localStorage.setItem('intellizap_token', response.data.token);
+        localStorage.setItem('intellizapp_user', JSON.stringify(response.data.user));
+        localStorage.setItem('intellizapp_token', response.data.token);
       } else {
         throw new Error(response.message || 'Registration failed');
       }
@@ -136,8 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('intellizap_user');
-    localStorage.removeItem('intellizap_token');
+    localStorage.removeItem('intellizapp_user');
+    localStorage.removeItem('intellizapp_token');
   };
 
   const updateUser = async (userData: Partial<User>) => {
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (response.success && response.data) {
         setUser(response.data);
-        localStorage.setItem('intellizap_user', JSON.stringify(response.data));
+        localStorage.setItem('intellizapp_user', JSON.stringify(response.data));
       } else {
         throw new Error(response.message || 'Profile update failed');
       }

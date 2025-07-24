@@ -5,6 +5,8 @@ export interface Usuario {
   email: string | null;
   plano_ativo: boolean;
   max_grupos: number;
+  tokens_mes: number;
+  'dia-renovacao-tokens': number;
   horaResumo: string | null;
   resumoDiaAnterior: boolean;
   transcricao_ativa: boolean;

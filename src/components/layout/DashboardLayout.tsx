@@ -69,7 +69,7 @@ const DashboardLayout = () => {
           <div className="flex h-16 items-center justify-between px-6 border-b border-border">
             <div className="flex items-center space-x-2">
               <Bot className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold cyber-text">Intellizap.IA</span>
+              <span className="text-xl font-bold cyber-text">Intellizapp.IA</span>
             </div>
             <Button
               variant="ghost"

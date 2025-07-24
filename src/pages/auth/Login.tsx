@@ -35,7 +35,7 @@ const Login = () => {
       navigate('/dashboard');
       toast({
         title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao Intellizap.IA"
+        description: "Bem-vindo ao Intellizapp.IA"
       });
     } catch (error) {
       toast({
@@ -61,7 +61,7 @@ const Login = () => {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold cyber-text">
-              Intellizap.IA
+              Intellizapp.IA
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Faça login para acessar sua conta
