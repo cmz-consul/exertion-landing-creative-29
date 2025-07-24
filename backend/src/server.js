@@ -13,6 +13,7 @@ import mensagensRoutes from './routes/mensagens.js';
 import evolutionRoutes from './routes/evolution.js';
 import dashboardRoutes from './routes/dashboard.js';
 import resumosRoutes from './routes/resumos.js';
+import healthRoutes from './routes/health.js';
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +63,7 @@ app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/evolution', evolutionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/resumos', resumosRoutes);
+app.use('/', healthRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
